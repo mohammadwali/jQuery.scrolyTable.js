@@ -36,6 +36,7 @@
             rowsToDisplay: 10,
             containerClass: "",
             onSort: function() {},
+            onInit: function() {},
             sortBy: []
         };
 
@@ -98,6 +99,7 @@
                         methods.fixColumns.apply(table, arguments)
                     }, 60)
                 });
+                if (typeof options.onInit == "function") options.onInit.apply(table, []);
             });
             return (count > 0) ? undefined : this;
         },
@@ -144,21 +146,20 @@
             var rows = table.find('tbody tr').get();
             rows.sort(function(a, b) {
                 //console.log($(a).children('td').eq(index));
-                var   A = ($(a).children('td').eq(index).has('input:text').length) ? $(a).children('td').eq(index).find('input:text').val().toUpperCase() : $(a).children('td').eq(index).text().toUpperCase(),
+                var A = ($(a).children('td').eq(index).has('input:text').length) ? $(a).children('td').eq(index).find('input:text').val().toUpperCase() : $(a).children('td').eq(index).text().toUpperCase(),
                     B = ($(b).children('td').eq(index).has('input:text').length) ? $(b).children('td').eq(index).find('input:text').val().toUpperCase() : $(b).children('td').eq(index).text().toUpperCase();
                 if (sortBy.length > 0) {
-                    var sortObject = $.grep(sortBy,function(i){
-                        
+                    var sortObject = $.grep(sortBy, function(i) {
                         return i.columnIndex == index;
                     });
                     //console.log(sortObject);
-                    if(sortObject.length > 0){
-                        if(typeof sortObject[0].getValue == "function"){
-                            A = sortObject[0].getValue.apply($(a).children('td').get(index),[]);
-                            B = sortObject[0].getValue.apply($(b).children('td').get(index),[]);
+                    if (sortObject.length > 0) {
+                        if (typeof sortObject[0].getValue == "function") {
+                            A = sortObject[0].getValue.apply($(a).children('td').get(index), []);
+                            B = sortObject[0].getValue.apply($(b).children('td').get(index), []);
                         }
                     }
-                } 
+                }
                 if (A < B) {
                     return -1 * f;
                 }
