@@ -36,9 +36,21 @@
             rowsToDisplay: 10,
             containerClass: "",
             escapeCols: [],
-            onSort: function() {},
             onInit: function() {},
-            sortBy: []
+            sort: {
+                enable: true,
+                onSort: function() {},
+                sortBy: [],
+                skipIndex: [1]
+            },
+            search: {
+                enable: true,
+                skipIndex: [1],
+                onToggle: function() {},
+                onResult: function() {},
+                searchRegex: "",
+                searchBy: [],
+            }
         };
 
     function getScrollbarWidth() {
@@ -54,7 +66,8 @@
     }
     var methods = {
         init: function(options) {
-            options = $.extend(defaults, options);
+            if (!$("style#scroly-style").length) appendStyle();
+            options =mergeObj(defaults, options);
             var table = this,
                 count = 0,
                 scrollbarWidth = getScrollbarWidth();
@@ -98,10 +111,20 @@
                         "-ms-user-select": "none",
                         "user-select": "none"
                     });
-                }).click(function() {
+                }).click(function(e) {
                     fn *= -1;
                     var currentHeaderIndex = table_header_tb.find('thead th').index(this);
-                    if ($.inArray(currentHeaderIndex, options.escapeCols) == -1) sortScroly.apply(table, [fn, currentHeaderIndex, options.onSort, options.sortBy]);
+                    var th = this;
+                    if ($.inArray(currentHeaderIndex, options.escapeCols) == -1) {
+                        if (event.ctrlKey && options.search.enable == true && $.inArray(currentHeaderIndex, options.search.skipIndex) == -1) {
+                            switchToSearch.apply(table, [th, currentHeaderIndex, options.search.onToggle]);
+                        } else {
+                            if (options.sort.enable == true && $.inArray(currentHeaderIndex, options.sort.skipIndex) == -1) {
+                                if ($(th).find('.scrolySearch-wrap').length > 0) return false;
+                                sortScroly.apply(table, [fn, currentHeaderIndex, options.sort.onSort, options.sort.sortBy]);
+                            }
+                        }
+                    }
                 });
                 table_header.attr("id", _id + "_header");
                 methods.fixColumns.apply(table, arguments);
@@ -197,6 +220,64 @@
                 table.children('tbody').append(row);
             });
             if (typeof callback == "function") callback.apply(this, []);
+        }
+
+        function mergeObj(obj1, obj2) {
+            for (var p in obj2) {
+                try {
+                    // Property in destination object set; update its value.
+                    if (obj2[p].constructor == Object) {
+                        obj1[p] = mergeObj(obj1[p], obj2[p]);
+                    } else {
+                        obj1[p] = obj2[p];
+                    }
+                } catch (e) {
+                    // Property in destination object not set; create it and set its value.
+                    obj1[p] = obj2[p];
+                }
+            }
+            return obj1;
+        }
+
+        function switchToSearch(th, index, callback) {
+            // console.log('index', index);
+           // console.log('callback', callback);
+            var that = this;
+            if ($(th).find('.scrolySearch-wrap').length == 0) {
+                removeSearchScroly.apply(that, [index, $(th).parents('thead').find('th')]);
+                var thText = $(th).text(),
+                    html = '<div class="scrolySearch-wrap"><span class="th-text">' + thText + '</span> <div class="scrolySearch"> <div class="scrolySearch-content"> <input type="text"> </div></div></div>';
+                $(th).html(html);
+                $(th).find('input:text').on('keyup', function(event) {
+                    //console.log('somthing pressed',event);
+                    if (event.keyCode == 13) {
+                        // enter pressed fire in the hole
+                        searchScroly.apply(that, [$(this).val(), index, options.search.onResult])
+                    } else if (event.keyCode == 27) {
+                        // escape pressed abort mission
+                        removeSearchScroly.apply(that, [index, $(th)]);
+                        if (typeof callback == "function") callback.apply(that, [index, false]);
+                    }
+                });
+                $(th).find('.scrolySearch').addClass('active');
+                $(th).find('input:text').focus();
+            }
+            if (typeof callback == "function") callback.apply(that, [index, true]);
+        }
+
+        function removeSearchScroly(index, th) {
+            th.each(function(i, elm) {
+                if ($(elm).find('.th-text').length) $(elm).html($(elm).find('.th-text'));
+            }).find('.scrolySearch').removeClass('active');
+        }
+
+        function searchScroly(value, index, callback) {
+            // body...
+            if (typeof callback == "function") callback.apply(this, []);
+        }
+
+        function appendStyle() {
+            return $("head").append('<style id="scroly-style">.scrolySearch .popup{position:absolute}.scrolySearch-wrap{display:inline-block;position:relative}.scrolySearch-wrap .scrolySearch{position:absolute;padding:3px 4px 5px;background:#fff;border-radius:2px;border:1px solid #D4DADB;-webkit-transition:all ease .25s;transition:all ease .25s;top:-40px;opacity:0;filter:alpha(opacity=0);visibility:hidden;z-index:999;left:50%;margin-left:-41px;width:80px}.scrolySearch-buttons{padding:5px 5px 0}.scrolySearch:before{content:"";display:inline-block;border-top:8px solid #DEDEDE;border-right:8px solid transparent;border-left:8px solid transparent;position:absolute;left:50%;bottom:-7px;z-index:1;margin-left:-8px}.scrolySearch:after{content:"";display:inline-block;border-top:8px solid #FFF;border-right:8px solid transparent;border-left:8px solid transparent;position:absolute;left:50%;bottom:-5px;margin-left:-8px;z-index:9}.scrolySearch.active{-webkit-transition:top ease .25s;transition:top ease .25s;opacity:1;filter:alpha(opacity=100);visibility:visible;top:-35px}.scrolySearch-wrap input{width:100%;border:1px solid #E2DADA;border-radius:3px;color:#7e7e7e}</style>');
         }
     $.fn.scrolyTable = function(options) {
         if (methods[options]) {
