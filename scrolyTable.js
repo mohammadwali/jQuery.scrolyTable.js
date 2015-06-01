@@ -35,6 +35,7 @@
         defaults = {
             rowsToDisplay: 10,
             containerClass: "",
+            escapeCols: [],
             onSort: function() {},
             onInit: function() {},
             sortBy: []
@@ -86,10 +87,21 @@
                 table_header_tb.html(_table.find("thead").clone())
                 //binding the thead 
                 var fn = 1;
-                table_header_tb.find('thead th').click(function() {
+                table_header_tb.find('thead th').each(function(i) {
+                    if ($.inArray(i, options.escapeCols) == -1) $(this).css({
+                        "cursor": "pointer",
+                        "-moz-user-select": "-moz-none",
+                        "-moz-user-select": "none",
+                        "-o-user-select": "none",
+                        "-khtml-user-select": "none",
+                        "-webkit-user-select": "none",
+                        "-ms-user-select": "none",
+                        "user-select": "none"
+                    });
+                }).click(function() {
                     fn *= -1;
                     var currentHeaderIndex = table_header_tb.find('thead th').index(this);
-                    sortScroly.apply(table, [fn, currentHeaderIndex, options.onSort, options.sortBy]);
+                    if ($.inArray(currentHeaderIndex, options.escapeCols) == -1) sortScroly.apply(table, [fn, currentHeaderIndex, options.onSort, options.sortBy]);
                 });
                 table_header.attr("id", _id + "_header");
                 methods.fixColumns.apply(table, arguments);
@@ -137,6 +149,19 @@
                 })
             });
             return (count > 0) ? undefined : this;
+        },
+        destroy: function() {
+            return $(this).each(function(i, c) {
+                c = $(c);
+                var header = $("div[id=" + c.attr("id") + "_header]"),
+                    wrapper = c.parents("div[id=" + c.attr("id") + "_wrapper]");
+                header.find("thead th").removeAttr("style");
+                c.find("thead").remove();
+                c.prepend(header.find("thead")[0]);
+                c.insertBefore(header);
+                header.remove();
+                wrapper.remove();
+            })
         }
     }
 
