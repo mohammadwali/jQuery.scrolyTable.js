@@ -2,9 +2,16 @@
 <html>
 <head>
 	<title></title>
+	<style type="text/css">
+	.hidden{
+		display:none;
+	}
+	</style>
 </head>
 <body style="padding:50px">
-
+<div id="filters">
+	
+</div>
 <table id="test">
 	<thead>
 	<tr>
@@ -12,18 +19,24 @@
 		<th>Heading2</th>
 		<th>Heading3</th>
 		<th>Heading4</th>
-		</tr>
+	</tr>
 
 	</thead>
 	<tbody>
 	<tr class="seprator" data-event-id="1">
 			<td colspan="4">Sep1</td>
 
+	</tr>
+	<tr data-event-id="1">
+			<td>data1</td>
+			<td><input type="text" value="data1"></td>
+			<td>data5</td>
+			<td data-value="1">Jutt</td>
 		</tr>
 		<tr data-event-id="1">
 			<td>data1</td>
 			<td><input type="text" value="data1"></td>
-			<td>data5</td>
+			<td>data4</td>
 			<td data-value="1">Jutt</td>
 		</tr>
 		<tr data-event-id="1">

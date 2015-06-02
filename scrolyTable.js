@@ -273,6 +273,7 @@
 
         function searchScroly(value, index, callback) {
             // body...
+            console.log(value);
             if (typeof callback == "function") callback.apply(this, []);
         }
 

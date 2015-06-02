@@ -67,7 +67,7 @@
     var methods = {
         init: function(options) {
             if (!$("style#scroly-style").length) appendStyle();
-            options =mergeObj(defaults, options);
+            options = mergeObj(defaults, options);
             var table = this,
                 count = 0,
                 scrollbarWidth = getScrollbarWidth();
@@ -117,7 +117,7 @@
                     var th = this;
                     if ($.inArray(currentHeaderIndex, options.escapeCols) == -1) {
                         if (event.ctrlKey && options.search.enable == true && $.inArray(currentHeaderIndex, options.search.skipIndex) == -1) {
-                            switchToSearch.apply(table, [th, currentHeaderIndex, options.search.onToggle]);
+                            switchToSearch.apply(table, [th, currentHeaderIndex, options.search]);
                         } else {
                             if (options.sort.enable == true && $.inArray(currentHeaderIndex, options.sort.skipIndex) == -1) {
                                 if ($(th).find('.scrolySearch-wrap').length > 0) return false;
@@ -239,9 +239,9 @@
             return obj1;
         }
 
-        function switchToSearch(th, index, callback) {
+        function switchToSearch(th, index, search) {
             // console.log('index', index);
-           // console.log('callback', callback);
+            // console.log('callback', callback);
             var that = this;
             if ($(th).find('.scrolySearch-wrap').length == 0) {
                 removeSearchScroly.apply(that, [index, $(th).parents('thead').find('th')]);
@@ -252,17 +252,17 @@
                     //console.log('somthing pressed',event);
                     if (event.keyCode == 13) {
                         // enter pressed fire in the hole
-                        searchScroly.apply(that, [$(this).val(), index, options.search.onResult])
+                        searchScroly.apply(that, [$(this).val(), index, th, search.onResult])
                     } else if (event.keyCode == 27) {
                         // escape pressed abort mission
                         removeSearchScroly.apply(that, [index, $(th)]);
-                        if (typeof callback == "function") callback.apply(that, [index, false]);
+                        if (typeof search.onToggle == "function") search.onToggle.apply(that, [index, false]);
                     }
                 });
                 $(th).find('.scrolySearch').addClass('active');
                 $(th).find('input:text').focus();
             }
-            if (typeof callback == "function") callback.apply(that, [index, true]);
+            if (typeof search.onToggle == "function") search.onToggle.apply(that, [index, true]);
         }
 
         function removeSearchScroly(index, th) {
@@ -271,9 +271,84 @@
             }).find('.scrolySearch').removeClass('active');
         }
 
-        function searchScroly(value, index, callback) {
+        function searchScroly(value, index, th, callback) {
             // body...
+            var that = this,
+                thText = $(th).find('.th-text').text().trim(),
+                str = "",
+                valueUpper = value.toUpperCase();
+            if (valueUpper == "") {
+                return false;
+            }
+            $(that).find('tbody tr:not(.seprator)').each(function() {
+                var currentTr = $(this);
+                var currentTd = currentTr.find('td').eq(index),
+                    str = currentTd.text();
+                if (str != "") {
+                    str = str.toUpperCase();
+                }
+                if (str.search(valueUpper) == -1) {
+                    if (!currentTr.hasClass('hidden')) {
+                        currentTr.addClass('hidden');
+                    }
+                    if (typeof currentTr.data('filteredHidden') == "undefined") {
+                        currentTr.data('filteredHidden', [{
+                            index: index,
+                            value: value,
+                            thText: thText
+                        }]);
+                    } else {
+                        currentTr.data('filteredHidden').push({
+                            index: index,
+                            value: value,
+                            thText: thText
+                        });
+                    }
+                }
+            });
+            if (value != "") {
+                addFilers.apply(that, [index, value, th]);
+            }
             if (typeof callback == "function") callback.apply(this, []);
+        }
+
+        function addFilers(index, value, th) {
+            var that = this;
+            var header = $("div[id=" + $(that).attr("id") + "_header]");
+            if (header.find('.filtersList').length == 0) {
+                header.prepend("<div class='filtersList' />");
+            }
+            header.find('.filtersList').append('<div class="filter"><span data-i="' + index + '" class="name">' + $(th).find('.th-text').text().trim() + '</span>: <span class="value">' + value + '</span><span class="filterClose">&times;</span></div>');
+            header.find('.filterClose').each(function() {
+                $(this).unbind('click').click(function(e) {
+                    e.preventDefault();
+                    var index = $(this).parents('.filter').find('span.name').attr('data-i'),
+                        value = $(this).parents('.filter').find('span.value').text().trim();
+                       
+                    removeFilers.apply(that, [index,value,$(this).parents('.filter')]);
+                });
+            });
+        }
+
+        function removeFilers(index,value,filter) {
+            var table = $(this);
+            table.find('tbody tr.hidden').each(function(i,elm){
+                var tr = $(elm),
+                filterData =tr.data('filteredHidden');
+                $.each(filterData,function(j,k){
+                   
+                    if(k.value == value && k.index == index){
+                        
+                        filterData.splice(j,1);
+                    }
+                });
+
+               if(filterData.length == 0){
+                    tr.removeClass('hidden');
+               }
+
+            });
+            filter.remove();
         }
 
         function appendStyle() {
